@@ -1,19 +1,18 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
-  DynamoDBDocumentClient,
-  QueryCommand,
-  ScanCommand,
-  PutCommand,
-  DeleteCommand,
+    DeleteCommand,
+    DynamoDBDocumentClient,
+    PutCommand,
+    QueryCommand
 } from "@aws-sdk/lib-dynamodb";
 import { v4 as uuidv4 } from "uuid";
 
 const klientDynamo = DynamoDBDocumentClient.from(
   new DynamoDBClient({
-    region: process.env.AWS_REGION,
+    region: process.env.MY_AWS_REGION,
     credentials: {
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+      accessKeyId: process.env.MY_AWS_ACCESS_KEY_ID!,
+      secretAccessKey: process.env.MY_AWS_SECRET_ACCESS_KEY!,
     },
   })
 );
