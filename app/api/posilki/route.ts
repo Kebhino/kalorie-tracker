@@ -1,21 +1,23 @@
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import {
-  QueryCommand,
-  PutItemCommand,
-  DeleteItemCommand,
-} from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient, QueryCommand, PutItemCommand, DeleteItemCommand } from "@aws-sdk/client-dynamodb";
 import { NextResponse } from "next/server";
 import { v4 as uuidv4 } from "uuid";
 
+const region = process.env.MY_AWS_REGION;
+const accessKeyId = process.env.MY_AWS_ACCESS_KEY_ID;
+const secretAccessKey = process.env.MY_AWS_SECRET_ACCESS_KEY;
+const nazwaTabeli = process.env.DYNAMO_TABLE;
+
+if (!region || !accessKeyId || !secretAccessKey || !nazwaTabeli) {
+  throw new Error("❌ Brak wymaganych zmiennych środowiskowych");
+}
+
 const klientDynamo = new DynamoDBClient({
-  region: process.env.MY_AWS_REGION,
+  region,
   credentials: {
-    accessKeyId: process.env.MY_AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.MY_AWS_SECRET_ACCESS_KEY!,
+    accessKeyId,
+    secretAccessKey,
   },
 });
-
-const nazwaTabeli = process.env.DYNAMO_TABLE!;
 
 export async function GET(request: Request) {
   try {
@@ -35,14 +37,16 @@ export async function GET(request: Request) {
       })
     );
 
-    const items = (wynik.Items || []).map((item) => ({
-      id: item.id?.S,
-      nazwa: item.nazwa?.S,
-      data: item.data?.S,
-      waga: Number(item.waga?.N),
-      kcalNa100g: Number(item.kcalNa100g?.N),
-      kcalRazem: Number(item.kcalRazem?.N),
-    }));
+    const items = Array.isArray(wynik.Items)
+      ? wynik.Items.map((item) => ({
+          id: item.id?.S,
+          nazwa: item.nazwa?.S,
+          data: item.data?.S,
+          waga: item.waga ? Number(item.waga.N) : undefined,
+          kcalNa100g: item.kcalNa100g ? Number(item.kcalNa100g.N) : undefined,
+          kcalRazem: item.kcalRazem ? Number(item.kcalRazem.N) : undefined,
+        }))
+      : [];
 
     return NextResponse.json(items);
   } catch (error) {
@@ -55,6 +59,10 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { nazwa, data, waga, kcalNa100g, kcalRazem } = body;
+
+    if (!nazwa || !data || !waga || !kcalNa100g || !kcalRazem) {
+      return NextResponse.json({ error: "Brakuje wymaganych pól" }, { status: 400 });
+    }
 
     const id = uuidv4();
 

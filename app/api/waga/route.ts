@@ -7,17 +7,24 @@ import {
 } from "@aws-sdk/lib-dynamodb";
 import { v4 as uuidv4 } from "uuid";
 
+const region = process.env.MY_AWS_REGION;
+const accessKeyId = process.env.MY_AWS_ACCESS_KEY_ID;
+const secretAccessKey = process.env.MY_AWS_SECRET_ACCESS_KEY;
+const nazwaTabeli = process.env.DYNAMO_WAGA_TABLE;
+
+if (!region || !accessKeyId || !secretAccessKey || !nazwaTabeli) {
+  throw new Error("❌ Brak wymaganych zmiennych środowiskowych");
+}
+
 const klientDynamo = DynamoDBDocumentClient.from(
   new DynamoDBClient({
-    region: process.env.MY_AWS_REGION,
+    region,
     credentials: {
-      accessKeyId: process.env.MY_AWS_ACCESS_KEY_ID!,
-      secretAccessKey: process.env.MY_AWS_SECRET_ACCESS_KEY!,
+      accessKeyId,
+      secretAccessKey,
     },
   })
 );
-
-const nazwaTabeli = process.env.DYNAMO_WAGA_TABLE ?? "Waga";
 
 // GET – Pobiera wszystkie wpisy wagi
 export async function GET() {
@@ -28,9 +35,9 @@ export async function GET() {
       })
     );
 
-    const posortowane = (wynik.Items ?? []).sort((a, b) =>
-      a.data.localeCompare(b.data)
-    );
+    const posortowane = Array.isArray(wynik.Items)
+      ? wynik.Items.sort((a, b) => (a.data ?? "").localeCompare(b.data ?? ""))
+      : [];
 
     return new Response(JSON.stringify(posortowane));
   } catch (e) {
