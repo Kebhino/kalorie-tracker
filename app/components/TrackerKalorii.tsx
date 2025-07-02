@@ -52,12 +52,17 @@ export default function TrackerKalorii() {
   };
 
   const pobierzPosilki = async () => {
-    const res = await fetch(`/api/posilki?data=${data}`);
-    const dane = await res.json();
-    if (Array.isArray(dane)) {
-      setPosilki(dane);
-    } else {
-      console.error("Nieprawidłowe dane z API:", dane);
+    try {
+      const res = await fetch(`/api/posilki?data=${data}`);
+      const dane = await res.json();
+      if (Array.isArray(dane)) {
+        setPosilki(dane);
+      } else {
+        console.error("Nieprawidłowe dane z API:", dane);
+        setPosilki([]);
+      }
+    } catch (err) {
+      console.error("Błąd pobierania posiłków:", err);
       setPosilki([]);
     }
   };
@@ -72,23 +77,28 @@ export default function TrackerKalorii() {
     const kcalRazem = Math.round((waga * kcalNa100g) / 100);
 
     ustawLadowanie(true);
-    await fetch("/api/posilki", {
-      method: "POST",
-      body: JSON.stringify({
-        nazwa,
-        waga,
-        kcalNa100g,
-        kcalRazem,
-        data,
-      }),
-      headers: { "Content-Type": "application/json" },
-    });
+    try {
+      await fetch("/api/posilki", {
+        method: "POST",
+        body: JSON.stringify({
+          nazwa,
+          waga,
+          kcalNa100g,
+          kcalRazem,
+          data,
+        }),
+        headers: { "Content-Type": "application/json" },
+      });
 
-    ustawNazwe("");
-    ustawWage(undefined);
-    ustawKcalNa100g(undefined);
-    await pobierzPosilki();
-    ustawLadowanie(false);
+      ustawNazwe("");
+      ustawWage(undefined);
+      ustawKcalNa100g(undefined);
+      await pobierzPosilki();
+    } catch (err) {
+      console.error("Błąd dodawania posiłku:", err);
+    } finally {
+      ustawLadowanie(false);
+    }
   };
 
   const sumaKalorii = posilki.reduce((suma, p) => suma + (p.kcalRazem || 0), 0);
