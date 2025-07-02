@@ -2,6 +2,7 @@ import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
   DynamoDBDocumentClient,
   QueryCommand,
+  ScanCommand,
   PutCommand,
   DeleteCommand,
 } from "@aws-sdk/lib-dynamodb";
@@ -39,9 +40,10 @@ export async function GET(request: Request) {
       })
     );
 
-    return new Response(JSON.stringify(wynik.Items ?? []));
+    const dane = Array.isArray(wynik.Items) ? wynik.Items : [];
+    return new Response(JSON.stringify(dane));
   } catch (e) {
-    console.error("Błąd pobierania:", e);
+    console.error("❌ Błąd pobierania:", e);
     return new Response(JSON.stringify({ error: "Błąd serwera" }), {
       status: 500,
     });
@@ -49,29 +51,28 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const body = await request.json();
-  const { nazwa, waga, kcalNa100g, kcalRazem, data } = body;
-
-  if (!nazwa || !waga || !kcalNa100g || !kcalRazem || !data) {
-    return new Response(
-      JSON.stringify({
-        error:
-          "Brakuje wymaganych pól (nazwa, waga, kcalNa100g, kcalRazem, data)",
-      }),
-      { status: 400 }
-    );
-  }
-
-  const nowyPosilek = {
-    id: uuidv4(),
-    nazwa,
-    waga,
-    kcalNa100g,
-    kcalRazem,
-    data,
-  };
-
   try {
+    const body = await request.json();
+    const { nazwa, waga, kcalNa100g, kcalRazem, data } = body;
+
+    if (!nazwa || !waga || !kcalNa100g || !kcalRazem || !data) {
+      return new Response(
+        JSON.stringify({
+          error: "Brakuje wymaganych pól (nazwa, waga, kcalNa100g, kcalRazem, data)",
+        }),
+        { status: 400 }
+      );
+    }
+
+    const nowyPosilek = {
+      id: uuidv4(),
+      nazwa,
+      waga: Number(waga),
+      kcalNa100g: Number(kcalNa100g),
+      kcalRazem: Number(kcalRazem),
+      data,
+    };
+
     await klientDynamo.send(
       new PutCommand({
         TableName: nazwaTabeli,
@@ -81,7 +82,7 @@ export async function POST(request: Request) {
 
     return new Response(JSON.stringify({ success: true }));
   } catch (e) {
-    console.error("Błąd dodawania:", e);
+    console.error("❌ Błąd dodawania:", e);
     return new Response(JSON.stringify({ error: "Błąd serwera" }), {
       status: 500,
     });
@@ -110,7 +111,7 @@ export async function DELETE(request: Request) {
 
     return new Response(JSON.stringify({ success: true }));
   } catch (e) {
-    console.error("Błąd usuwania:", e);
+    console.error("❌ Błąd usuwania:", e);
     return new Response(JSON.stringify({ error: "Błąd serwera" }), {
       status: 500,
     });

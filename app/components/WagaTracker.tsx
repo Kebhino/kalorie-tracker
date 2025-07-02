@@ -52,7 +52,6 @@ export default function WagaTracker() {
   const [waga, ustawWage] = useState<number | null>(null);
   const [czyLaduje, ustawLadowanie] = useState(false);
   const [pomiary, ustawPomiary] = useState<PomiarWagi[]>([]);
-  const [widoczne, setWidoczne] = useState(10);
   const [kolejnosc, ustawKolejnosc] = useState<string[]>([
     Sekcje.Formularz,
     Sekcje.Statystyki,
@@ -117,12 +116,12 @@ export default function WagaTracker() {
       <div
         ref={setNodeRef}
         style={style}
-        {...attributes}
-        className="h-full min-h-[380px]"
+        className="h-[420px] card bg-base-100 shadow-md p-4 flex flex-col"
       >
         <div
+          {...attributes}
           {...listeners}
-          className="cursor-grab flex items-center gap-2 text-gray-400 px-4 pt-2"
+          className="cursor-grab flex items-center gap-2 text-gray-400 mb-2"
         >
           <GripVertical className="w-4 h-4" /> Przeciągnij
         </div>
@@ -157,8 +156,8 @@ export default function WagaTracker() {
     : "-";
 
   return (
-    <div className="max-w-screen-lg mx-auto px-4 py-2 grid md:grid-cols-2 gap-6 auto-rows-[1fr]">
-      <h1 className="md:col-span-2 text-3xl font-bold text-center flex items-center justify-center gap-2">
+    <div className="max-w-screen-lg mx-auto px-4 py-4">
+      <h1 className="text-3xl font-bold text-center flex items-center justify-center gap-2 mb-2">
         <Weight className="w-6 h-6" /> Waga – śledzenie zmian
       </h1>
 
@@ -177,79 +176,83 @@ export default function WagaTracker() {
           items={kolejnosc}
           strategy={verticalListSortingStrategy}
         >
-          {kolejnosc.map((sekcja) => {
-            if (sekcja === Sekcje.Formularz)
-              return (
-                <SortowalnaSekcja key={sekcja} id={sekcja}>
-                  <div className="card bg-base-200 shadow-lg p-6 space-y-4 h-full">
-                    <div className="form-control w-full">
-                      <label className="label">
-                        <span className="label-text flex gap-2 items-center font-medium">
-                          <CalendarDays className="w-4 h-4" /> Data
-                        </span>
-                      </label>
-                      <input
-                        type="date"
-                        className="input input-bordered w-full"
-                        value={data}
-                        onChange={(e) => ustawDate(e.target.value)}
-                      />
+          <div className="grid md:grid-cols-2 gap-6 auto-rows-[1fr]">
+            {kolejnosc.map((sekcja) => {
+              if (sekcja === Sekcje.Formularz)
+                return (
+                  <SortowalnaSekcja key={sekcja} id={sekcja}>
+                    <div className="space-y-4 flex flex-col h-full">
+                      <div className="form-control w-full">
+                        <label className="label">
+                          <span className="label-text flex gap-2 items-center font-medium">
+                            <CalendarDays className="w-4 h-4" /> Data
+                          </span>
+                        </label>
+                        <input
+                          type="date"
+                          className="input input-bordered w-full"
+                          value={data}
+                          onChange={(e) => ustawDate(e.target.value)}
+                        />
+                      </div>
+                      <div className="form-control w-full">
+                        <label className="label">
+                          <span className="label-text flex gap-2 items-center font-medium">
+                            <Weight className="w-4 h-4" /> Waga (kg)
+                          </span>
+                        </label>
+                        <input
+                          type="number"
+                          className="input input-bordered w-full"
+                          value={waga ?? ""}
+                          onChange={(e) => ustawWage(Number(e.target.value))}
+                          placeholder="np. 125.4"
+                        />
+                      </div>
+                      <button
+                        className="btn btn-primary btn-block flex gap-2 items-center justify-center mt-auto"
+                        onClick={dodajPomiar}
+                        disabled={czyLaduje}
+                      >
+                        <Plus className="w-4 h-4" />
+                        {czyLaduje ? "Dodawanie..." : "Dodaj pomiar"}
+                      </button>
                     </div>
+                  </SortowalnaSekcja>
+                );
 
-                    <div className="form-control w-full">
-                      <label className="label">
-                        <span className="label-text flex gap-2 items-center font-medium">
-                          <Weight className="w-4 h-4" /> Waga (kg)
-                        </span>
-                      </label>
-                      <input
-                        type="number"
-                        className="input input-bordered w-full"
-                        value={waga ?? ""}
-                        onChange={(e) => ustawWage(Number(e.target.value))}
-                        placeholder="np. 125.4"
-                      />
+              if (sekcja === Sekcje.Statystyki)
+                return (
+                  <SortowalnaSekcja key={sekcja} id={sekcja}>
+                    <div className="space-y-4">
+                      <h2 className="text-xl font-semibold mb-2 flex gap-2 items-center">
+                        <Info className="w-5 h-5" /> Statystyki
+                      </h2>
+                      <div className="flex flex-wrap gap-2">
+                        <div className="badge badge-outline">
+                          Miesięczny spadek:{" "}
+                          <strong className="ml-1">{roznica} kg</strong>
+                        </div>
+                        <div className="badge badge-outline">
+                          Tygodniowo:{" "}
+                          <strong className="ml-1">{tygodniowo} kg</strong>
+                        </div>
+                        <div className="badge badge-outline">
+                          Utrata masy:{" "}
+                          <strong className="ml-1">{procent} %</strong>
+                        </div>
+                        <div className="badge badge-outline">
+                          BMI: <strong className="ml-1">{bmi}</strong> –{" "}
+                          {bmiOpis}
+                        </div>
+                      </div>
                     </div>
+                  </SortowalnaSekcja>
+                );
 
-                    <button
-                      className="btn btn-primary btn-block flex gap-2 items-center justify-center"
-                      onClick={dodajPomiar}
-                      disabled={czyLaduje}
-                    >
-                      <Plus className="w-4 h-4" />
-                      {czyLaduje ? "Dodawanie..." : "Dodaj pomiar"}
-                    </button>
-                  </div>
-                </SortowalnaSekcja>
-              );
-
-            if (sekcja === Sekcje.Statystyki)
-              return (
-                <SortowalnaSekcja key={sekcja} id={sekcja}>
-                  <div className="card bg-base-100 shadow-md p-4 space-y-2 h-full">
-                    <h2 className="text-xl font-semibold mb-2 flex gap-2 items-center">
-                      <Info className="w-5 h-5" /> Statystyki
-                    </h2>
-                    <p>
-                      Miesięczny spadek: <strong>{roznica} kg</strong>
-                    </p>
-                    <p>
-                      Tygodniowo: <strong>{tygodniowo} kg</strong>
-                    </p>
-                    <p>
-                      Utrata masy: <strong>{procent} %</strong>
-                    </p>
-                    <p>
-                      BMI: <strong>{bmi}</strong> – {bmiOpis}
-                    </p>
-                  </div>
-                </SortowalnaSekcja>
-              );
-
-            if (sekcja === Sekcje.Trend)
-              return (
-                <SortowalnaSekcja key={sekcja} id={sekcja}>
-                  <div className="card bg-base-100 shadow-md p-4 h-full">
+              if (sekcja === Sekcje.Trend)
+                return (
+                  <SortowalnaSekcja key={sekcja} id={sekcja}>
                     <h2 className="text-xl font-semibold mb-4 text-center">
                       Trend wagi
                     </h2>
@@ -267,25 +270,14 @@ export default function WagaTracker() {
                         />
                       </LineChart>
                     </ResponsiveContainer>
-                  </div>
-                </SortowalnaSekcja>
-              );
+                  </SortowalnaSekcja>
+                );
 
-            if (sekcja === Sekcje.Historia)
-              return (
-                <SortowalnaSekcja key={sekcja} id={sekcja}>
-                  <div className="card bg-base-100 shadow-md p-4 h-full">
+              if (sekcja === Sekcje.Historia)
+                return (
+                  <SortowalnaSekcja key={sekcja} id={sekcja}>
                     <h2 className="text-xl font-semibold mb-2">Historia wag</h2>
-                    <div
-                      className="overflow-y-auto max-h-[300px]"
-                      onScroll={(e) => {
-                        const { scrollTop, scrollHeight, clientHeight } =
-                          e.currentTarget;
-                        if (scrollTop + clientHeight >= scrollHeight - 10) {
-                          setWidoczne((prev) => prev + 10);
-                        }
-                      }}
-                    >
+                    <div className="overflow-y-auto max-h-[300px]">
                       <table className="table table-zebra w-full">
                         <thead>
                           <tr>
@@ -295,7 +287,7 @@ export default function WagaTracker() {
                           </tr>
                         </thead>
                         <tbody>
-                          {pomiary.slice(0, widoczne).map((p) => (
+                          {pomiary.map((p) => (
                             <tr key={p.id}>
                               <td>{p.data}</td>
                               <td>{p.waga}</td>
@@ -312,12 +304,12 @@ export default function WagaTracker() {
                         </tbody>
                       </table>
                     </div>
-                  </div>
-                </SortowalnaSekcja>
-              );
+                  </SortowalnaSekcja>
+                );
 
-            return null;
-          })}
+              return null;
+            })}
+          </div>
         </SortableContext>
       </DndContext>
     </div>
