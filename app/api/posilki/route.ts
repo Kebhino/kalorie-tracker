@@ -3,6 +3,7 @@ import {
   DynamoDBDocumentClient,
   QueryCommand,
   PutCommand,
+  DeleteCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { v4 as uuidv4 } from "uuid";
 
@@ -20,7 +21,7 @@ const nazwaTabeli = process.env.DYNAMO_TABLE!;
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const data = searchParams.get("data"); // format: "2025-07-02"
+  const data = searchParams.get("data");
 
   if (!data) {
     return new Response(JSON.stringify({ error: "Brak daty w zapytaniu" }), {
@@ -49,11 +50,14 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const body = await request.json();
-  const { nazwa, kalorie, data } = body;
+  const { nazwa, waga, kcalNa100g, kcalRazem, data } = body;
 
-  if (!nazwa || !kalorie || !data) {
+  if (!nazwa || !waga || !kcalNa100g || !kcalRazem || !data) {
     return new Response(
-      JSON.stringify({ error: "Brakuje wymaganych pól (nazwa, kalorie, data)" }),
+      JSON.stringify({
+        error:
+          "Brakuje wymaganych pól (nazwa, waga, kcalNa100g, kcalRazem, data)",
+      }),
       { status: 400 }
     );
   }
@@ -61,7 +65,9 @@ export async function POST(request: Request) {
   const nowyPosilek = {
     id: uuidv4(),
     nazwa,
-    kalorie,
+    waga,
+    kcalNa100g,
+    kcalRazem,
     data,
   };
 
@@ -76,6 +82,35 @@ export async function POST(request: Request) {
     return new Response(JSON.stringify({ success: true }));
   } catch (e) {
     console.error("Błąd dodawania:", e);
+    return new Response(JSON.stringify({ error: "Błąd serwera" }), {
+      status: 500,
+    });
+  }
+}
+
+export async function DELETE(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
+  const data = searchParams.get("data");
+
+  if (!id || !data) {
+    return new Response(
+      JSON.stringify({ error: "Brakuje parametrów 'id' lub 'data'" }),
+      { status: 400 }
+    );
+  }
+
+  try {
+    await klientDynamo.send(
+      new DeleteCommand({
+        TableName: nazwaTabeli,
+        Key: { data, id },
+      })
+    );
+
+    return new Response(JSON.stringify({ success: true }));
+  } catch (e) {
+    console.error("Błąd usuwania:", e);
     return new Response(JSON.stringify({ error: "Błąd serwera" }), {
       status: 500,
     });
