@@ -7,13 +7,19 @@ import {
 } from "@aws-sdk/lib-dynamodb";
 import { v4 as uuidv4 } from "uuid";
 
+// 🔍 Debug – logujemy zmienne środowiskowe w czasie builda
+console.log("ENV DYNAMO_WAGA_TABLE:", process.env.DYNAMO_WAGA_TABLE);
+console.log("ENV REGION:", process.env.MY_AWS_REGION);
+console.log("ENV KEY:", process.env.MY_AWS_ACCESS_KEY_ID ? "✅" : "❌");
+console.log("ENV SECRET:", process.env.MY_AWS_SECRET_ACCESS_KEY ? "✅" : "❌");
+
 const region = process.env.MY_AWS_REGION;
 const accessKeyId = process.env.MY_AWS_ACCESS_KEY_ID;
 const secretAccessKey = process.env.MY_AWS_SECRET_ACCESS_KEY;
 const nazwaTabeli = process.env.DYNAMO_WAGA_TABLE;
 
 if (!region || !accessKeyId || !secretAccessKey || !nazwaTabeli) {
-  console.log("Brakujące zmienne środowiskowe:");
+  console.log("❌ Brakujące zmienne środowiskowe:");
   console.log("region:", region);
   console.log("accessKeyId:", accessKeyId);
   console.log("secretAccessKey:", secretAccessKey ? "***" : "brak");
@@ -46,10 +52,11 @@ export async function GET() {
 
     return new Response(JSON.stringify(posortowane));
   } catch (e) {
-    console.error("❌ Błąd API:", e); // <- tu pełny stacktrace
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Błąd serwera" }), {
-      status: 500,
-    });
+    console.error("❌ Błąd pobierania wagi:", e);
+    return new Response(
+      JSON.stringify({ error: e instanceof Error ? e.message : "Błąd serwera" }),
+      { status: 500 }
+    );
   }
 }
 
@@ -81,10 +88,11 @@ export async function POST(request: Request) {
 
     return new Response(JSON.stringify({ success: true }));
   } catch (e) {
-    console.error("Błąd dodawania wagi:", e);
-    return new Response(JSON.stringify({ error: "Błąd serwera" }), {
-      status: 500,
-    });
+    console.error("❌ Błąd dodawania wagi:", e);
+    return new Response(
+      JSON.stringify({ error: e instanceof Error ? e.message : "Błąd serwera" }),
+      { status: 500 }
+    );
   }
 }
 
@@ -114,9 +122,10 @@ export async function DELETE(request: Request) {
 
     return new Response(JSON.stringify({ success: true }));
   } catch (e) {
-    console.error("Błąd usuwania wagi:", e);
-    return new Response(JSON.stringify({ error: "Błąd serwera" }), {
-      status: 500,
-    });
+    console.error("❌ Błąd usuwania wagi:", e);
+    return new Response(
+      JSON.stringify({ error: e instanceof Error ? e.message : "Błąd serwera" }),
+      { status: 500 }
+    );
   }
 }
