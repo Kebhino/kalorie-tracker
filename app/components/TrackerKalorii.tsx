@@ -20,7 +20,7 @@ type Posilek = {
 };
 
 export default function TrackerKalorii() {
-  const [posilki, ustawPosilki] = useState<Posilek[]>([]);
+  const [posilki, setPosilki] = useState<Posilek[]>([]);
   const [nazwa, ustawNazwe] = useState("");
   const [waga, ustawWage] = useState<number | undefined>();
   const [kcalNa100g, ustawKcalNa100g] = useState<number | undefined>();
@@ -54,23 +54,22 @@ export default function TrackerKalorii() {
   const pobierzPosilki = async () => {
     const res = await fetch(`/api/posilki?data=${data}`);
     const dane = await res.json();
-    ustawPosilki(dane);
+    if (Array.isArray(dane)) {
+      setPosilki(dane);
+    } else {
+      console.error("Nieprawidłowe dane z API:", dane);
+      setPosilki([]);
+    }
   };
 
   useEffect(() => {
-    const pobierzPosilki = async () => {
-      const res = await fetch(`/api/posilki?data=${data}`);
-      const dane = await res.json();
-      ustawPosilki(dane);
-    };
-
     pobierzPosilki();
   }, [data]);
 
   const dodajPosilek = async () => {
     if (!nazwa || !waga || !kcalNa100g) return;
 
-    const kcalRazem = Math.round(((waga ?? 0) * (kcalNa100g ?? 0)) / 100);
+    const kcalRazem = Math.round((waga * kcalNa100g) / 100);
 
     ustawLadowanie(true);
     await fetch("/api/posilki", {
@@ -92,7 +91,7 @@ export default function TrackerKalorii() {
     ustawLadowanie(false);
   };
 
-  const sumaKalorii = posilki.reduce((suma, p) => suma + p.kcalRazem, 0);
+  const sumaKalorii = posilki.reduce((suma, p) => suma + (p.kcalRazem || 0), 0);
   const zapotrzebowanie = 3000;
   const deficyt = zapotrzebowanie - sumaKalorii;
 

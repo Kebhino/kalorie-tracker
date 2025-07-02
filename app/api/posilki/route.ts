@@ -39,10 +39,16 @@ export async function GET(request: Request) {
       })
     );
 
-    const dane = Array.isArray(wynik.Items) ? wynik.Items : [];
-    return new Response(JSON.stringify(dane));
+    console.log("Wynik zapytania do Dynamo:", wynik.Items);
+
+    if (!Array.isArray(wynik.Items)) {
+      console.error("DynamoDB nie zwróciło tablicy:", wynik.Items);
+      return new Response(JSON.stringify([])); // zabezpieczenie
+    }
+
+    return new Response(JSON.stringify(wynik.Items));
   } catch (e) {
-    console.error("❌ Błąd pobierania:", e);
+    console.error("Błąd pobierania:", e);
     return new Response(JSON.stringify({ error: "Błąd serwera" }), {
       status: 500,
     });
