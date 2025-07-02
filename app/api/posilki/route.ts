@@ -4,6 +4,7 @@ import {
   PutCommand,
   QueryCommand,
   DeleteCommand,
+  ScanCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { v4 as uuidv4 } from "uuid";
 import { NextResponse } from "next/server";
@@ -47,15 +48,12 @@ export async function GET(request: Request) {
     }
 
     const wynik = await klientDynamo.send(
-      new QueryCommand({
+      new ScanCommand({
         TableName: nazwaTabeli,
-        KeyConditionExpression: "#d = :d",
-        ExpressionAttributeNames: { "#d": "data" },
-        ExpressionAttributeValues: { ":d": data },
       })
     );
 
-    const items = wynik.Items || [];
+    const items = (wynik.Items || []).filter((item) => item.data === data);
 
     return NextResponse.json(items);
   } catch (e) {
@@ -66,6 +64,7 @@ export async function GET(request: Request) {
     );
   }
 }
+
 
 export async function POST(request: Request) {
   try {
