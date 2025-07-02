@@ -41,8 +41,8 @@ export async function GET() {
 
     return new Response(JSON.stringify(posortowane));
   } catch (e) {
-    console.error("Błąd pobierania wagi:", e);
-    return new Response(JSON.stringify({ error: "Błąd serwera" }), {
+    console.error("❌ Błąd API:", e); // <- tu pełny stacktrace
+    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Błąd serwera" }), {
       status: 500,
     });
   }

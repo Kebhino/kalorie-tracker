@@ -35,6 +35,7 @@ export async function GET(request: Request) {
         ExpressionAttributeNames: { "#d": "data" },
         ExpressionAttributeValues: { ":d": { S: data } },
       })
+      
     );
 
     const items = Array.isArray(wynik.Items)
@@ -49,9 +50,12 @@ export async function GET(request: Request) {
       : [];
 
     return NextResponse.json(items);
-  } catch (error) {
-    console.error("Błąd API posiłków (GET):", error);
-    return NextResponse.json({ error: "Błąd serwera" }, { status: 500 });
+  } catch (e) {
+    console.error("❌ Błąd API:", e); // <- tu pełny stacktrace
+    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Błąd serwera" }), {
+      status: 500,
+      });
+
   }
 }
 
