@@ -8,6 +8,11 @@ const secretAccessKey = process.env.MY_AWS_SECRET_ACCESS_KEY;
 const nazwaTabeli = process.env.DYNAMO_TABLE;
 
 if (!region || !accessKeyId || !secretAccessKey || !nazwaTabeli) {
+  console.log("Brakujące zmienne środowiskowe:");
+  console.log("region:", region);
+  console.log("accessKeyId:", accessKeyId);
+  console.log("secretAccessKey:", secretAccessKey ? "***" : "brak");
+  console.log("nazwaTabeli:", nazwaTabeli);
   throw new Error("❌ Brak wymaganych zmiennych środowiskowych");
 }
 
