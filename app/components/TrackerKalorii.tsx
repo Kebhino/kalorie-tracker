@@ -58,6 +58,12 @@ export default function TrackerKalorii() {
   };
 
   useEffect(() => {
+    const pobierzPosilki = async () => {
+      const res = await fetch(`/api/posilki?data=${data}`);
+      const dane = await res.json();
+      ustawPosilki(dane);
+    };
+
     pobierzPosilki();
   }, [data]);
 

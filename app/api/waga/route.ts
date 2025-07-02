@@ -1,9 +1,9 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
   DynamoDBDocumentClient,
-  QueryCommand,
   PutCommand,
   ScanCommand,
+  DeleteCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { v4 as uuidv4 } from "uuid";
 
@@ -17,8 +17,9 @@ const klientDynamo = DynamoDBDocumentClient.from(
   })
 );
 
-const nazwaTabeli = "Waga"; // lub process.env.DYNAMO_WAGA_TABLE jeśli wolisz trzymać w .env
+const nazwaTabeli = process.env.DYNAMO_WAGA_TABLE ?? "Waga";
 
+// GET – Pobiera wszystkie wpisy wagi
 export async function GET() {
   try {
     const wynik = await klientDynamo.send(
@@ -40,24 +41,25 @@ export async function GET() {
   }
 }
 
+// POST – Dodaje nowy wpis
 export async function POST(request: Request) {
-  const body = await request.json();
-  const { data, waga } = body;
-
-  if (!data || !waga) {
-    return new Response(
-      JSON.stringify({ error: "Brakuje wymaganych pól (data, waga)" }),
-      { status: 400 }
-    );
-  }
-
-  const nowyPomiar = {
-    id: uuidv4(),
-    data,
-    waga: Number(waga),
-  };
-
   try {
+    const body = await request.json();
+    const { data, waga } = body;
+
+    if (!data || !waga) {
+      return new Response(
+        JSON.stringify({ error: "Brakuje wymaganych pól (data, waga)" }),
+        { status: 400 }
+      );
+    }
+
+    const nowyPomiar = {
+      id: uuidv4(),
+      data,
+      waga: Number(waga),
+    };
+
     await klientDynamo.send(
       new PutCommand({
         TableName: nazwaTabeli,
@@ -68,6 +70,39 @@ export async function POST(request: Request) {
     return new Response(JSON.stringify({ success: true }));
   } catch (e) {
     console.error("Błąd dodawania wagi:", e);
+    return new Response(JSON.stringify({ error: "Błąd serwera" }), {
+      status: 500,
+    });
+  }
+}
+
+// DELETE – Usuwa wpis na podstawie ID i daty
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+    const data = searchParams.get("data");
+
+    if (!id || !data) {
+      return new Response(
+        JSON.stringify({ error: "Brak wymaganych parametrów (id, data)" }),
+        { status: 400 }
+      );
+    }
+
+    await klientDynamo.send(
+      new DeleteCommand({
+        TableName: nazwaTabeli,
+        Key: {
+          data,
+          id,
+        },
+      })
+    );
+
+    return new Response(JSON.stringify({ success: true }));
+  } catch (e) {
+    console.error("Błąd usuwania wagi:", e);
     return new Response(JSON.stringify({ error: "Błąd serwera" }), {
       status: 500,
     });

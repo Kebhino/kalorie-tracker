@@ -6,11 +6,10 @@ import {
   Line,
   XAxis,
   YAxis,
-  CartesianGrid,
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { CalendarDays, Weight, Plus } from "lucide-react";
+import { CalendarDays, Trash2, Plus, Weight } from "lucide-react";
 
 type PomiarWagi = {
   id?: string;
@@ -19,24 +18,28 @@ type PomiarWagi = {
 };
 
 export default function WagaTracker() {
-  const [pomiarWagi, ustawPomiarWagi] = useState<PomiarWagi[]>([]);
   const [data, ustawDate] = useState(
     () => new Date().toISOString().split("T")[0]
   );
-  const [waga, ustawWage] = useState<number | undefined>();
+  const [waga, ustawWage] = useState<number | null>(null);
   const [czyLaduje, ustawLadowanie] = useState(false);
+  const [pomiary, ustawPomiary] = useState<PomiarWagi[]>([]);
+  const [widoczne, setWidoczne] = useState(10);
 
-  const pobierzWage = async () => {
+  const pobierzPomiary = async () => {
     const res = await fetch("/api/waga");
     const dane = await res.json();
-    ustawPomiarWagi(dane);
+    const posortowane = dane.sort((a: PomiarWagi, b: PomiarWagi) =>
+      b.data.localeCompare(a.data)
+    );
+    ustawPomiary(posortowane);
   };
 
   useEffect(() => {
-    pobierzWage();
+    pobierzPomiary();
   }, []);
 
-  const dodajWage = async () => {
+  const dodajPomiar = async () => {
     if (!waga || !data) return;
 
     ustawLadowanie(true);
@@ -45,77 +48,139 @@ export default function WagaTracker() {
       body: JSON.stringify({ data, waga }),
       headers: { "Content-Type": "application/json" },
     });
-
-    ustawWage(undefined);
-    await pobierzWage();
+    ustawWage(null);
+    await pobierzPomiary();
     ustawLadowanie(false);
   };
 
-  return (
-    <div className="max-w-2xl mx-auto p-4 space-y-6">
-      <h1 className="text-3xl font-bold text-center">📉 Tracker wagi</h1>
+  const usunPomiar = async (id: string, data: string) => {
+    const potwierdzenie = window.confirm(
+      "Czy na pewno chcesz usunąć ten wpis?"
+    );
+    if (!potwierdzenie) return;
 
-      <div className="card bg-base-200 shadow-lg p-8 space-y-6">
+    await fetch(`/api/waga?id=${id}&data=${data}`, {
+      method: "DELETE",
+    });
+    pobierzPomiary();
+  };
+
+  return (
+    <div className="max-w-3xl mx-auto p-4 space-y-6">
+      <h1 className="text-3xl font-bold text-center flex items-center justify-center gap-2">
+        <Weight className="w-6 h-6" /> Waga – śledzenie zmian
+      </h1>
+
+      <div className="card bg-base-200 shadow-lg p-6 space-y-4">
         <div className="form-control w-full">
           <label className="label">
-            <span className="label-text flex items-center gap-2 font-medium">
+            <span className="label-text flex gap-2 items-center font-medium">
               <CalendarDays className="w-4 h-4" /> Data
             </span>
           </label>
           <input
             type="date"
+            className="input input-bordered w-full"
             value={data}
             onChange={(e) => ustawDate(e.target.value)}
-            className="input input-bordered w-full"
           />
         </div>
 
         <div className="form-control w-full">
           <label className="label">
-            <span className="label-text flex items-center gap-2 font-medium">
+            <span className="label-text flex gap-2 items-center font-medium">
               <Weight className="w-4 h-4" /> Waga (kg)
             </span>
           </label>
           <input
             type="number"
+            className="input input-bordered w-full"
             value={waga ?? ""}
             onChange={(e) => ustawWage(Number(e.target.value))}
-            className="input input-bordered w-full"
-            placeholder="np. 127.5"
+            placeholder="np. 125.4"
           />
         </div>
 
         <button
-          onClick={dodajWage}
+          className="btn btn-primary btn-block flex gap-2 items-center justify-center"
+          onClick={dodajPomiar}
           disabled={czyLaduje}
-          className="btn btn-primary btn-block flex items-center gap-2"
         >
           <Plus className="w-4 h-4" />
-          {czyLaduje ? "Dodawanie..." : "Dodaj wagę"}
+          {czyLaduje ? "Dodawanie..." : "Dodaj pomiar"}
         </button>
       </div>
 
-      <div className="mt-8">
-        <h2 className="text-xl font-semibold mb-4">📈 Trend wagi:</h2>
-        {pomiarWagi.length === 0 ? (
-          <p className="text-gray-400">Brak danych do wyświetlenia</p>
-        ) : (
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={pomiarWagi}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="data" />
-              <YAxis domain={["dataMin - 2", "dataMax + 2"]} unit=" kg" />
-              <Tooltip />
-              <Line
-                type="monotone"
-                dataKey="waga"
-                stroke="#60a5fa"
-                strokeWidth={3}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        )}
-      </div>
+      {pomiary.length > 0 ? (
+        <>
+          <div className="card bg-base-100 shadow-md p-4">
+            <h2 className="text-xl font-semibold mb-4 text-center">
+              Trend wagi
+            </h2>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={[...pomiary].reverse()}>
+                <XAxis dataKey="data" />
+                <YAxis domain={["auto", "auto"]} />
+                <Tooltip />
+                <Line
+                  type="monotone"
+                  dataKey="waga"
+                  stroke="#3b82f6"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="collapse collapse-arrow bg-base-100 shadow-md">
+            <input type="checkbox" />
+            <div className="collapse-title text-xl font-semibold">
+              Historia wag
+            </div>
+            <div className="collapse-content">
+              <div
+                className="overflow-y-auto max-h-[400px]"
+                onScroll={(e) => {
+                  const { scrollTop, scrollHeight, clientHeight } =
+                    e.currentTarget;
+                  if (scrollTop + clientHeight >= scrollHeight - 10) {
+                    setWidoczne((prev) => prev + 10);
+                  }
+                }}
+              >
+                <table className="table table-zebra w-full">
+                  <thead>
+                    <tr>
+                      <th>Data</th>
+                      <th>Waga (kg)</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pomiary.slice(0, widoczne).map((p) => (
+                      <tr key={p.id}>
+                        <td>{p.data}</td>
+                        <td>{p.waga}</td>
+                        <td>
+                          <button
+                            onClick={() => usunPomiar(p.id!, p.data)}
+                            className="btn btn-ghost btn-xs text-error"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </>
+      ) : (
+        <p className="text-center text-gray-400">Brak danych do wyświetlenia</p>
+      )}
     </div>
   );
 }
