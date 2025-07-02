@@ -1,13 +1,12 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
+  DeleteCommand,
   DynamoDBDocumentClient,
   PutCommand,
-  QueryCommand,
-  DeleteCommand,
-  ScanCommand,
+  ScanCommand
 } from "@aws-sdk/lib-dynamodb";
-import { v4 as uuidv4 } from "uuid";
 import { NextResponse } from "next/server";
+import { v4 as uuidv4 } from "uuid";
 
 function getKonfiguracjaAWS() {
   const region = process.env.MY_AWS_REGION;
