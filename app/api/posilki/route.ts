@@ -8,37 +8,37 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import { NextResponse } from "next/server";
 
-console.log("ENV DYNAMO_TABLE:", process.env.DYNAMO_TABLE);
-console.log("ENV REGION:", process.env.MY_AWS_REGION);
-console.log("ENV KEY:", process.env.MY_AWS_ACCESS_KEY_ID ? "✅" : "❌");
-console.log("ENV SECRET:", process.env.MY_AWS_SECRET_ACCESS_KEY ? "✅" : "❌");
+function getKonfiguracjaAWS() {
+  const region = process.env.MY_AWS_REGION;
+  const accessKeyId = process.env.MY_AWS_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.MY_AWS_SECRET_ACCESS_KEY;
+  const nazwaTabeli = process.env.DYNAMO_TABLE;
 
-const region = process.env.MY_AWS_REGION;
-const accessKeyId = process.env.MY_AWS_ACCESS_KEY_ID;
-const secretAccessKey = process.env.MY_AWS_SECRET_ACCESS_KEY;
-const nazwaTabeli = process.env.DYNAMO_TABLE;
+  if (!region || !accessKeyId || !secretAccessKey || !nazwaTabeli) {
+    console.log("❌ Brakujące zmienne środowiskowe:");
+    console.log("region:", region);
+    console.log("accessKeyId:", accessKeyId);
+    console.log("secretAccessKey:", secretAccessKey ? "***" : "brak");
+    console.log("nazwaTabeli:", nazwaTabeli);
+    throw new Error("❌ Brak wymaganych zmiennych środowiskowych");
+  }
 
-if (!region || !accessKeyId || !secretAccessKey || !nazwaTabeli) {
-  console.log("❌ Brakujące zmienne środowiskowe:");
-  console.log("region:", region);
-  console.log("accessKeyId:", accessKeyId);
-  console.log("secretAccessKey:", secretAccessKey ? "***" : "brak");
-  console.log("nazwaTabeli:", nazwaTabeli);
-  throw new Error("❌ Brak wymaganych zmiennych środowiskowych");
+  const klientDynamo = DynamoDBDocumentClient.from(
+    new DynamoDBClient({
+      region,
+      credentials: {
+        accessKeyId,
+        secretAccessKey,
+      },
+    })
+  );
+
+  return { klientDynamo, nazwaTabeli };
 }
-
-const klientDynamo = DynamoDBDocumentClient.from(
-  new DynamoDBClient({
-    region,
-    credentials: {
-      accessKeyId,
-      secretAccessKey,
-    },
-  })
-);
 
 export async function GET(request: Request) {
   try {
+    const { klientDynamo, nazwaTabeli } = getKonfiguracjaAWS();
     const { searchParams } = new URL(request.url);
     const data = searchParams.get("data");
 
@@ -69,6 +69,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const { klientDynamo, nazwaTabeli } = getKonfiguracjaAWS();
     const body = await request.json();
     const { nazwa, data, waga, kcalNa100g, kcalRazem } = body;
 
@@ -101,6 +102,7 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
+    const { klientDynamo, nazwaTabeli } = getKonfiguracjaAWS();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
     const data = searchParams.get("data");
