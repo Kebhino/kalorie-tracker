@@ -1,124 +1,107 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
-    DeleteCommand,
-    DynamoDBDocumentClient,
-    PutCommand,
-    QueryCommand
-} from "@aws-sdk/lib-dynamodb";
+  QueryCommand,
+  PutItemCommand,
+  DeleteItemCommand,
+} from "@aws-sdk/client-dynamodb";
+import { NextResponse } from "next/server";
 import { v4 as uuidv4 } from "uuid";
 
-const klientDynamo = DynamoDBDocumentClient.from(
-  new DynamoDBClient({
-    region: process.env.MY_AWS_REGION,
-    credentials: {
-      accessKeyId: process.env.MY_AWS_ACCESS_KEY_ID!,
-      secretAccessKey: process.env.MY_AWS_SECRET_ACCESS_KEY!,
-    },
-  })
-);
+const klientDynamo = new DynamoDBClient({
+  region: process.env.MY_AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.MY_AWS_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.MY_AWS_SECRET_ACCESS_KEY!,
+  },
+});
 
 const nazwaTabeli = process.env.DYNAMO_TABLE!;
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const data = searchParams.get("data");
-
-  if (!data) {
-    return new Response(JSON.stringify({ error: "Brak daty w zapytaniu" }), {
-      status: 400,
-    });
-  }
-
   try {
+    const { searchParams } = new URL(request.url);
+    const data = searchParams.get("data");
+
+    if (!data) {
+      return NextResponse.json({ error: "Brak daty w zapytaniu" }, { status: 400 });
+    }
+
     const wynik = await klientDynamo.send(
       new QueryCommand({
         TableName: nazwaTabeli,
         KeyConditionExpression: "#d = :d",
         ExpressionAttributeNames: { "#d": "data" },
-        ExpressionAttributeValues: { ":d": data },
+        ExpressionAttributeValues: { ":d": { S: data } },
       })
     );
 
-    console.log("Wynik zapytania do Dynamo:", wynik.Items);
+    const items = (wynik.Items || []).map((item) => ({
+      id: item.id?.S,
+      nazwa: item.nazwa?.S,
+      data: item.data?.S,
+      waga: Number(item.waga?.N),
+      kcalNa100g: Number(item.kcalNa100g?.N),
+      kcalRazem: Number(item.kcalRazem?.N),
+    }));
 
-    if (!Array.isArray(wynik.Items)) {
-      console.error("DynamoDB nie zwróciło tablicy:", wynik.Items);
-      return new Response(JSON.stringify([])); // zabezpieczenie
-    }
-
-    return new Response(JSON.stringify(wynik.Items));
-  } catch (e) {
-    console.error("Błąd pobierania:", e);
-    return new Response(JSON.stringify({ error: "Błąd serwera" }), {
-      status: 500,
-    });
+    return NextResponse.json(items);
+  } catch (error) {
+    console.error("Błąd API posiłków (GET):", error);
+    return NextResponse.json({ error: "Błąd serwera" }, { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { nazwa, waga, kcalNa100g, kcalRazem, data } = body;
+    const { nazwa, data, waga, kcalNa100g, kcalRazem } = body;
 
-    if (!nazwa || !waga || !kcalNa100g || !kcalRazem || !data) {
-      return new Response(
-        JSON.stringify({
-          error: "Brakuje wymaganych pól (nazwa, waga, kcalNa100g, kcalRazem, data)",
-        }),
-        { status: 400 }
-      );
-    }
-
-    const nowyPosilek = {
-      id: uuidv4(),
-      nazwa,
-      waga: Number(waga),
-      kcalNa100g: Number(kcalNa100g),
-      kcalRazem: Number(kcalRazem),
-      data,
-    };
+    const id = uuidv4();
 
     await klientDynamo.send(
-      new PutCommand({
+      new PutItemCommand({
         TableName: nazwaTabeli,
-        Item: nowyPosilek,
+        Item: {
+          id: { S: id },
+          nazwa: { S: nazwa },
+          data: { S: data },
+          waga: { N: String(waga) },
+          kcalNa100g: { N: String(kcalNa100g) },
+          kcalRazem: { N: String(kcalRazem) },
+        },
       })
     );
 
-    return new Response(JSON.stringify({ success: true }));
-  } catch (e) {
-    console.error("❌ Błąd dodawania:", e);
-    return new Response(JSON.stringify({ error: "Błąd serwera" }), {
-      status: 500,
-    });
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Błąd API posiłków (POST):", error);
+    return NextResponse.json({ error: "Błąd serwera" }, { status: 500 });
   }
 }
 
 export async function DELETE(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const id = searchParams.get("id");
-  const data = searchParams.get("data");
-
-  if (!id || !data) {
-    return new Response(
-      JSON.stringify({ error: "Brakuje parametrów 'id' lub 'data'" }),
-      { status: 400 }
-    );
-  }
-
   try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+    const data = searchParams.get("data");
+
+    if (!id || !data) {
+      return NextResponse.json({ error: "Brakuje ID lub daty" }, { status: 400 });
+    }
+
     await klientDynamo.send(
-      new DeleteCommand({
+      new DeleteItemCommand({
         TableName: nazwaTabeli,
-        Key: { data, id },
+        Key: {
+          data: { S: data },
+          id: { S: id },
+        },
       })
     );
 
-    return new Response(JSON.stringify({ success: true }));
-  } catch (e) {
-    console.error("❌ Błąd usuwania:", e);
-    return new Response(JSON.stringify({ error: "Błąd serwera" }), {
-      status: 500,
-    });
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Błąd API posiłków (DELETE):", error);
+    return NextResponse.json({ error: "Błąd serwera" }, { status: 500 });
   }
 }
