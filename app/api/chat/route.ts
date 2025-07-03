@@ -1,6 +1,8 @@
 import { OpenAI } from "openai";
 import { NextResponse } from "next/server";
 
+export const runtime = "nodejs"; // 👈 to wymusza backend na Node.js, nie na Edge
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
   project: process.env.OPENAI_PROJECT_ID,
