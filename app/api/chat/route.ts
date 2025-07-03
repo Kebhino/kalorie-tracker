@@ -1,7 +1,7 @@
 import { OpenAI } from "openai";
 import { NextResponse } from "next/server";
 
-export const runtime = "nodejs"; // 👈 to wymusza backend na Node.js, nie na Edge
+export const runtime = "nodejs"; // ✅ uruchamia backend jako Node.js zamiast Edge Runtime
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -19,6 +19,7 @@ export async function POST(req: Request) {
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
+      temperature: 0.7,
       messages: [
         {
           role: "system",
@@ -34,7 +35,6 @@ export async function POST(req: Request) {
           content: message,
         },
       ],
-      temperature: 0.7,
       tools: [
         {
           type: "function",
@@ -67,14 +67,14 @@ export async function POST(req: Request) {
     });
 
     const fullText = response.choices[0].message.content ?? "";
-    const functionCall = response.choices[0].message.tool_calls?.[0];
+    const toolCall = response.choices[0].message.tool_calls?.[0];
     let meal = null;
 
-    if (functionCall?.function?.arguments) {
+    if (toolCall?.function?.arguments) {
       try {
-        meal = JSON.parse(functionCall.function.arguments);
+        meal = JSON.parse(toolCall.function.arguments);
       } catch (err) {
-        console.warn("⚠️ Nie udało się sparsować danych z function call:", err);
+        console.warn("⚠️ Nie udało się sparsować danych z tool call:", err);
       }
     }
 
@@ -83,7 +83,15 @@ export async function POST(req: Request) {
       meal,
     });
   } catch (err) {
-    console.error("🔥 Błąd w /api/chat:", err);
-    return NextResponse.json({ error: "Błąd AI" }, { status: 500 });
+  const error = err instanceof Error ? err : new Error("Nieznany błąd");
+
+    return NextResponse.json(
+  {
+    error: "Błąd AI",
+    details: error.message,
+  },
+  { status: 500 }
+);
+
   }
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   CalendarDays,
   Utensils,
@@ -68,7 +68,7 @@ export default function TrackerKalorii() {
     ustawDateDoUsuniecia(null);
   };
 
-  const pobierzPosilki = async () => {
+  const pobierzPosilki = useCallback(async () => {
     try {
       const res = await fetch(`/api/posilki?data=${data}`);
       const dane = await res.json();
@@ -81,11 +81,11 @@ export default function TrackerKalorii() {
       console.error("Błąd pobierania posiłków:", err);
       setPosilki([]);
     }
-  };
+  }, [data]);
 
   useEffect(() => {
     pobierzPosilki();
-  }, [data]);
+  }, [pobierzPosilki]);
 
   const dodajPosilek = async () => {
     if (!nazwa || !waga || !kcalNa100g) return;
