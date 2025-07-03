@@ -8,6 +8,7 @@ import {
   Flame,
   Plus,
   Trash2,
+  Sparkles,
 } from "lucide-react";
 
 type Posilek = {
@@ -17,6 +18,16 @@ type Posilek = {
   waga: number;
   kcalNa100g: number;
   kcalRazem: number;
+};
+
+type AIPosilek = {
+  produkty: {
+    nazwa: string;
+    waga: number;
+    kcalNa100g: number;
+    kcal: number;
+  }[];
+  kcalŁącznie: number;
 };
 
 export default function TrackerKalorii() {
@@ -32,6 +43,12 @@ export default function TrackerKalorii() {
   const [modalOtwarte, ustawModalOtwarte] = useState(false);
   const [idDoUsuniecia, ustawIdDoUsuniecia] = useState<string | null>(null);
   const [dataDoUsuniecia, ustawDateDoUsuniecia] = useState<string | null>(null);
+
+  const [odAI, ustawOdAI] = useState<AIPosilek | null>(null);
+  const [odpowiedz, ustawOdpowiedz] = useState<string>("");
+  const [czyPrzetwarza, ustawCzyPrzetwarza] = useState(false);
+  const [oknoAI, ustawOknoAI] = useState(false);
+  const [tekstZapytania, ustawTekstZapytania] = useState("");
 
   const otworzModal = (id: string, data: string) => {
     ustawIdDoUsuniecia(id);
@@ -58,7 +75,6 @@ export default function TrackerKalorii() {
       if (Array.isArray(dane)) {
         setPosilki(dane);
       } else {
-        console.error("Nieprawidłowe dane z API:", dane);
         setPosilki([]);
       }
     } catch (err) {
@@ -73,23 +89,14 @@ export default function TrackerKalorii() {
 
   const dodajPosilek = async () => {
     if (!nazwa || !waga || !kcalNa100g) return;
-
     const kcalRazem = Math.round((waga * kcalNa100g) / 100);
-
     ustawLadowanie(true);
     try {
       await fetch("/api/posilki", {
         method: "POST",
-        body: JSON.stringify({
-          nazwa,
-          waga,
-          kcalNa100g,
-          kcalRazem,
-          data,
-        }),
+        body: JSON.stringify({ nazwa, waga, kcalNa100g, kcalRazem, data }),
         headers: { "Content-Type": "application/json" },
       });
-
       ustawNazwe("");
       ustawWage(undefined);
       ustawKcalNa100g(undefined);
@@ -105,9 +112,90 @@ export default function TrackerKalorii() {
   const zapotrzebowanie = 3000;
   const deficyt = zapotrzebowanie - sumaKalorii;
 
+  const zapytajAI = async () => {
+    if (!tekstZapytania.trim()) return;
+    ustawCzyPrzetwarza(true);
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      body: JSON.stringify({ message: tekstZapytania }),
+    });
+    const dane = await res.json();
+    ustawOdpowiedz(dane.answer);
+    ustawOdAI(dane.meal);
+    ustawCzyPrzetwarza(false);
+  };
+
+  const zapiszZChat = async () => {
+    if (!odAI) return;
+    const res = await fetch("/api/posilki/dodaj", {
+      method: "POST",
+      body: JSON.stringify({
+        ...odAI,
+        data: new Date().toISOString().split("T")[0],
+      }),
+    });
+    if (res.ok) {
+      ustawOdAI(null);
+      ustawOdpowiedz("");
+      ustawOknoAI(false);
+      await pobierzPosilki();
+    }
+  };
+
   return (
     <div className="max-w-2xl mx-auto p-4 space-y-6">
       <h1 className="text-3xl font-bold text-center">Tracker kalorii</h1>
+
+      <button
+        onClick={() => ustawOknoAI(true)}
+        className="btn btn-accent btn-block gap-2"
+      >
+        <Sparkles className="w-4 h-4" /> Zapytaj AI o kaloryczność posiłku
+      </button>
+
+      {oknoAI && (
+        <dialog className="modal modal-open">
+          <div className="modal-box space-y-4">
+            <h2 className="font-bold text-lg">AI: Opisz swój posiłek</h2>
+
+            <textarea
+              className="textarea textarea-bordered w-full"
+              placeholder="np. 2 serki skyr, banan, 2 nektarynki"
+              value={tekstZapytania}
+              onChange={(e) => ustawTekstZapytania(e.target.value)}
+            />
+
+            <button
+              onClick={zapytajAI}
+              disabled={czyPrzetwarza}
+              className="btn btn-primary btn-block"
+            >
+              {czyPrzetwarza ? "Analizuję..." : "Wyślij do AI"}
+            </button>
+
+            {odpowiedz && (
+              <div className="bg-base-200 p-4 rounded-lg whitespace-pre-wrap">
+                {odpowiedz}
+              </div>
+            )}
+
+            {odAI && (
+              <button
+                onClick={zapiszZChat}
+                className="btn btn-success btn-block"
+              >
+                <Plus className="w-4 h-4" /> Zapisz ten posiłek
+              </button>
+            )}
+
+            <div className="modal-action">
+              <button onClick={() => ustawOknoAI(false)} className="btn">
+                Zamknij
+              </button>
+            </div>
+          </div>
+        </dialog>
+      )}
 
       <div className="card bg-base-200 shadow-lg p-8 space-y-6">
         <div className="form-control w-full">
@@ -231,7 +319,7 @@ export default function TrackerKalorii() {
             </p>
           ) : (
             <p className="text-lg font-bold text-red-600">
-              Ficyt: {Math.abs(deficyt)} kcal
+              Nadwyżka: {Math.abs(deficyt)} kcal
             </p>
           )}
         </div>
