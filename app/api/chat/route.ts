@@ -7,14 +7,14 @@ const openai = new OpenAI({
 });
 
 export async function POST(req: Request) {
-  const body = await req.json();
-  const { message } = body;
-
-  if (!message) {
-    return NextResponse.json({ error: "Brak wiadomości" }, { status: 400 });
-  }
-
   try {
+    const body = await req.json();
+    const { message } = body;
+
+    if (!message) {
+      return NextResponse.json({ error: "Brak wiadomości" }, { status: 400 });
+    }
+
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
@@ -81,7 +81,7 @@ export async function POST(req: Request) {
       meal,
     });
   } catch (err) {
-    console.error("🔥 Błąd OpenAI:", err);
+    console.error("🔥 Błąd w /api/chat:", err);
     return NextResponse.json({ error: "Błąd AI" }, { status: 500 });
   }
 }

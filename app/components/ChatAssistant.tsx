@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { LucideMessageCircle, LucideX, LucideSend } from "lucide-react";
 import clsx from "clsx";
+import { toast } from "react-hot-toast";
 
 interface Wiadomosc {
   rola: "user" | "ai";
@@ -13,6 +14,53 @@ export default function ChatAssistant() {
   const [widoczny, setWidoczny] = useState(false);
   const [wiadomosci, setWiadomosci] = useState<Wiadomosc[]>([]);
   const [input, setInput] = useState("");
+  const [ostatniaOdpowiedz, setOstatniaOdpowiedz] = useState<string | null>(
+    null
+  );
+
+  const wyciagnijNazweIKalorie = (tekst: string) => {
+    const kcalMatch = tekst.match(
+      /(?:Łączna kaloryczność .*?|suma kalorii.*?) to około (\d+)\s*kcal/i
+    );
+    const nazwaMatch = tekst.match(/Ile kalorii ma (.+?)\?/i);
+    if (!kcalMatch || !nazwaMatch) return null;
+
+    return {
+      nazwa: nazwaMatch[1].trim(),
+      kcal: parseInt(kcalMatch[1]),
+    };
+  };
+
+  const dodajPosilekZCzatu = async () => {
+    if (!ostatniaOdpowiedz) return;
+
+    const dane = wyciagnijNazweIKalorie(ostatniaOdpowiedz);
+    if (!dane) {
+      toast.error("Nie udało się rozpoznać danych.");
+      return;
+    }
+
+    const data = new Date().toISOString().split("T")[0];
+
+    try {
+      await fetch("/api/posilki", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nazwa: dane.nazwa,
+          kcalRazem: dane.kcal,
+          data,
+          waga: null,
+          kcalNa100g: null,
+        }),
+      });
+
+      toast.success(`✅ Dodano: ${dane.nazwa} (${dane.kcal} kcal)`);
+    } catch (err) {
+      console.error("Błąd zapisu:", err);
+      toast.error("❌ Nie udało się zapisać posiłku.");
+    }
+  };
 
   const wyslij = async () => {
     if (!input.trim()) return;
@@ -20,6 +68,7 @@ export default function ChatAssistant() {
     const nowaWiadomosc: Wiadomosc = { rola: "user", tresc: input };
     setWiadomosci((prev) => [...prev, nowaWiadomosc]);
     setInput("");
+    setOstatniaOdpowiedz(null);
 
     try {
       const res = await fetch("/api/chat", {
@@ -36,11 +85,7 @@ export default function ChatAssistant() {
       };
 
       setWiadomosci((prev) => [...prev, odpowiedzAI]);
-
-      if (data.meal) {
-        console.log("Można dodać posiłek:", data.meal);
-        // Tu potem możesz dodać przycisk „Dodaj”
-      }
+      setOstatniaOdpowiedz(data.answer);
     } catch (err) {
       console.error("Błąd przy wysyłaniu", err);
     }
@@ -83,6 +128,19 @@ export default function ChatAssistant() {
               {msg.tresc}
             </div>
           ))}
+
+          {/* Przycisk dodania posiłku */}
+          {ostatniaOdpowiedz && wyciagnijNazweIKalorie(ostatniaOdpowiedz) && (
+            <div className="mt-2">
+              <button
+                onClick={dodajPosilekZCzatu}
+                className="btn btn-success btn-sm"
+              >
+                ✅ Dodaj: {wyciagnijNazweIKalorie(ostatniaOdpowiedz)?.nazwa} –{" "}
+                {wyciagnijNazweIKalorie(ostatniaOdpowiedz)?.kcal} kcal
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Pole input + przycisk */}
