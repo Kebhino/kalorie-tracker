@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   return NextResponse.json({
-    openaiKey: process.env.OPENAI_API_KEY ? 'OK' : 'MISSING',
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY || "BRAK",
+    OPENAI_PROJECT_ID: process.env.OPENAI_PROJECT_ID || "BRAK",
   });
 }
