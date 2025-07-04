@@ -10,6 +10,7 @@ const openai = new OpenAI({
 
 export async function POST(req: Request) {
   try {
+    console.log("KEY:", process.env.OPENAI_API_KEY ? "✅ MAMY" : "❌ BRAK");
     const body = await req.json();
     const { message } = body;
 
