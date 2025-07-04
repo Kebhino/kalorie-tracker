@@ -6,11 +6,16 @@ export const runtime = "nodejs"; // ✅ uruchamia backend jako Node.js zamiast E
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
   project: process.env.OPENAI_PROJECT_ID,
+  organization: process.env.OPENAI_ORGANIZATION, // ← TO JEST KLUCZOWE
 });
+
 
 export async function POST(req: Request) {
   try {
     console.log("KEY:", process.env.OPENAI_API_KEY ? "✅ MAMY" : "❌ BRAK");
+    console.log("KEY:", !!process.env.OPENAI_API_KEY);
+console.log("PROJECT:", !!process.env.OPENAI_PROJECT_ID);
+console.log("ORG:", !!process.env.OPENAI_ORGANIZATION);
     const body = await req.json();
     const { message } = body;
 
