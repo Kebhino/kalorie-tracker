@@ -44,6 +44,17 @@ export default function Logowanie() {
         <button onClick={zaloguj} className="btn btn-primary w-full">
           Zaloguj
         </button>
+        <button
+          onClick={() => signIn("google", { callbackUrl: "/" })}
+          className="btn btn-outline w-full mt-2"
+        >
+          <img
+            src="/google-icon-logo-svgrepo-com.svg"
+            alt="Google"
+            className="w-5 h-5 mr-2"
+          />
+          Zaloguj przez Google
+        </button>
       </div>
     </div>
   );
