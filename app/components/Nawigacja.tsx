@@ -1,10 +1,11 @@
 "use client";
-
+import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 export default function Nawigacja() {
   const pathname = usePathname();
+  const { data: session } = useSession(); // 🔍 dodane
 
   return (
     <div className="navbar bg-base-100 shadow mb-6">
@@ -26,6 +27,15 @@ export default function Nawigacja() {
           >
             ⚖️ Waga
           </Link>
+
+          {session && (
+            <button
+              onClick={() => signOut({ callbackUrl: "/logowanie" })}
+              className="btn btn-outline btn-error"
+            >
+              Wyloguj się
+            </button>
+          )}
         </div>
       </div>
     </div>

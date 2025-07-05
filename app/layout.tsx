@@ -4,6 +4,7 @@ import "./globals.css";
 import Nawigacja from "./components/Nawigacja";
 import ChatAssistant from "./components/ChatAssistant";
 import { Toaster } from "react-hot-toast";
+import SessionProviderWrapper from "./components/SessionProviderWrapper";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -53,10 +54,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Toaster position="top-right" />
-        <Nawigacja />
-        <ChatAssistant />
-        {children}
+        <SessionProviderWrapper>
+          <Toaster position="top-right" />
+          <Nawigacja />
+          <ChatAssistant />
+          {children}
+        </SessionProviderWrapper>
       </body>
     </html>
   );
