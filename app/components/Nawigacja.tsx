@@ -43,7 +43,9 @@ export default function Nawigacja() {
             <Image
               src={session.user.image || "/placeholder.jpg"}
               alt="Avatar"
-              className="w-8 h-8 rounded-full"
+              width={32}
+              height={32}
+              className="rounded-full"
             />
             <span className="text-sm">
               <strong>{session.user.name}</strong>

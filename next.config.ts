@@ -7,6 +7,9 @@ const nextConfig = {
     DYNAMO_WAGA_TABLE: process.env.DYNAMO_WAGA_TABLE ?? "Waga",
     DYNAMO_TABLE: process.env.DYNAMO_TABLE ?? "Posilki",
   },
+  images: {
+    domains: ['lh3.googleusercontent.com'],
+  },
 };
 
 export default nextConfig;
