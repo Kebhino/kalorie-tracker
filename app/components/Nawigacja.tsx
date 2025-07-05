@@ -45,7 +45,7 @@ export default function Nawigacja() {
               className="w-8 h-8 rounded-full"
             />
             <span className="text-sm">
-              Zalogowany jako <strong>{session.user.name}</strong>
+              <strong>{session.user.name}</strong>
             </span>
             <button
               onClick={() => signOut({ callbackUrl: "/logowanie" })}
