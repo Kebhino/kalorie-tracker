@@ -26,7 +26,7 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   pages: {
-    signIn: "/logowanie", // strona logowania
+    signIn: "/logowanie",
   },
   session: {
     strategy: "jwt",
