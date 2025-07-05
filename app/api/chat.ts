@@ -61,8 +61,12 @@ export default async function handler(
       answer: odpowiedz,
       meal: mealData,
     });
-  } catch (err: any) {
+  } catch (err) {
+  if (err instanceof Error) {
+    console.error("Błąd API GPT:", err.message);
+  } else {
     console.error("Błąd API GPT:", err);
-    res.status(500).json({ error: "Błąd AI" });
   }
+  res.status(500).json({ error: "Błąd AI" });
+}
 }

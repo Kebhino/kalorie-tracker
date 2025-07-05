@@ -2,6 +2,7 @@
 
 import { signIn } from "next-auth/react";
 import { useState } from "react";
+import Image from "next/image";
 
 export default function Logowanie() {
   const [email, setEmail] = useState("");
@@ -48,7 +49,7 @@ export default function Logowanie() {
           onClick={() => signIn("google", { callbackUrl: "/" })}
           className="btn btn-outline w-full mt-2"
         >
-          <img
+          <Image
             src="/google-icon-logo-svgrepo-com.svg"
             alt="Google"
             className="w-5 h-5 mr-2"

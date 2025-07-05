@@ -3,6 +3,7 @@ import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 export default function Nawigacja() {
   const pathname = usePathname();
@@ -39,7 +40,7 @@ export default function Nawigacja() {
 
         {session?.user && (
           <div className="flex items-center gap-3">
-            <img
+            <Image
               src={session.user.image || "/placeholder.jpg"}
               alt="Avatar"
               className="w-8 h-8 rounded-full"
